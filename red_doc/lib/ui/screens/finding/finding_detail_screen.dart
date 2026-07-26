@@ -359,9 +359,7 @@
 //   }
 // }
 
-
-
-
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -373,6 +371,7 @@ import 'package:red_doc/ui/widgets/evidence_card.dart';
 import 'package:red_doc/ui/widgets/empty_widget.dart';
 import 'package:red_doc/data/repositories/finding_repository.dart';
 import 'package:red_doc/data/repositories/storage_repository.dart';
+import 'package:red_doc/services/image_picker_service.dart';
 import 'package:red_doc/utils/constants.dart';
 
 class FindingDetailScreen extends StatefulWidget {
@@ -387,7 +386,7 @@ class FindingDetailScreen extends StatefulWidget {
 class _FindingDetailScreenState extends State<FindingDetailScreen> {
   final FindingRepository _findingRepository = FindingRepository();
   final StorageRepository _storageRepository = StorageRepository();
-  final ImagePicker _imagePicker = ImagePicker();
+  final ImagePickerService _imagePickerService = ImagePickerService();
   late Future<FindingModel?> _findingFuture;
 
   bool _isUploading = false;
@@ -499,14 +498,18 @@ class _FindingDetailScreenState extends State<FindingDetailScreen> {
   // This is what makes "Add" work when demoing in Chrome.
   void _pickImage(ImageSource source) async {
     try {
-      final XFile? pickedFile = await _imagePicker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
-      );
+      final Uint8List? rawBytes = source == ImageSource.camera
+          ? await _imagePickerService.captureImageFromCamera()
+          : await _imagePickerService.pickImageFromGallery();
 
-      if (pickedFile == null) {
+      if (rawBytes == null) {
+        return;
+      }
+
+      if (!mounted) return;
+      final String? note = await _promptForNote();
+      if (note == null) {
+        // User tapped Cancel on the note dialog - abort the upload.
         return;
       }
 
@@ -514,13 +517,12 @@ class _FindingDetailScreenState extends State<FindingDetailScreen> {
         _isUploading = true;
       });
 
-      final Uint8List rawBytes = await pickedFile.readAsBytes();
       final Uint8List imageBytes = _compressImage(rawBytes);
 
       await _storageRepository.uploadEvidence(
         imageBytes: imageBytes,
         findingId: widget.findingId,
-        note: '',
+        note: note,
       );
 
       if (!mounted) return;
@@ -550,6 +552,47 @@ class _FindingDetailScreenState extends State<FindingDetailScreen> {
         ),
       );
     }
+  }
+
+  // Shows a small dialog asking for an optional note describing the
+  // evidence (e.g. "Burp Suite request showing SQLi payload").
+  // Returns the note text if the user taps Upload (may be empty string),
+  // or null if the user cancels - null is used as the signal to abort
+  // the whole upload.
+  Future<String?> _promptForNote() async {
+    final TextEditingController controller = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add Evidence Note'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              hintText: 'e.g. Burp Suite request showing SQLi payload',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Upload'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // Resizes the image down to a max of 1024px on the longest side and
@@ -619,7 +662,7 @@ class _FindingDetailScreenState extends State<FindingDetailScreen> {
     );
   }
 
-  void _showFullImage(String imageUrl) {
+  void _showFullImage(String imageData) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -628,7 +671,7 @@ class _FindingDetailScreenState extends State<FindingDetailScreen> {
           height: 400,
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: NetworkImage(imageUrl),
+              image: MemoryImage(base64Decode(imageData)),
               fit: BoxFit.contain,
             ),
           ),
@@ -733,16 +776,19 @@ class _FindingDetailScreenState extends State<FindingDetailScreen> {
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Description', style: AppTheme.heading3),
-                            const SizedBox(height: 8),
-                            Text(
-                              finding.description,
-                              style: AppTheme.bodyMedium,
-                            ),
-                          ],
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Description', style: AppTheme.heading3),
+                              const SizedBox(height: 8),
+                              Text(
+                                finding.description,
+                                style: AppTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -751,16 +797,22 @@ class _FindingDetailScreenState extends State<FindingDetailScreen> {
                       Card(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Recommendation', style: AppTheme.heading3),
-                              const SizedBox(height: 8),
-                              Text(
-                                finding.recommendation,
-                                style: AppTheme.bodyMedium,
-                              ),
-                            ],
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Recommendation',
+                                  style: AppTheme.heading3,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  finding.recommendation,
+                                  style: AppTheme.bodyMedium,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -820,6 +872,28 @@ class _FindingDetailScreenState extends State<FindingDetailScreen> {
                           );
                         }
 
+                        if (evidenceSnapshot.hasError) {
+                          // Printed so the real Firestore error (e.g. a
+                          // missing composite index) shows up in the
+                          // debug console instead of being swallowed.
+                          debugPrint(
+                            'getEvidenceByFinding error: ${evidenceSnapshot.error}',
+                          );
+                          return SizedBox(
+                            height: 120,
+                            child: Center(
+                              child: Text(
+                                'Error loading evidence:\n${evidenceSnapshot.error}',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
                         final evidenceList = evidenceSnapshot.data ?? [];
 
                         if (evidenceList.isEmpty) {
@@ -836,16 +910,15 @@ class _FindingDetailScreenState extends State<FindingDetailScreen> {
                             itemBuilder: (context, index) {
                               final evidence = evidenceList[index];
                               return EvidenceCard(
-                                imageUrl: evidence.imageUrl,
+                                imageData: evidence.imageData,
                                 note: evidence.note,
                                 onTap: () {
-                                  _showFullImage(evidence.imageUrl);
+                                  _showFullImage(evidence.imageData);
                                 },
                                 onDelete: () async {
                                   try {
                                     await _storageRepository.deleteEvidence(
                                       evidence.evidenceId,
-                                      evidence.imageUrl,
                                     );
                                     if (!mounted) return;
                                     ScaffoldMessenger.of(context).showSnackBar(

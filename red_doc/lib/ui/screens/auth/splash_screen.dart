@@ -4,6 +4,7 @@ import 'package:red_doc/ui/screens/auth/login_screen.dart';
 import 'package:red_doc/ui/screens/dashboard/dashboard_screen.dart';
 import 'package:red_doc/data/repositories/auth_repository.dart';
 
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -53,7 +54,7 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.shield, size: 80, color: Colors.white),
+              Image.asset('assets/images/logo.png', width: 100, height: 100),
               const SizedBox(height: 20),
               Text(
                 'RedDoc',
