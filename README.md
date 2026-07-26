@@ -108,7 +108,7 @@ The application manages:
 | Dart | Programming language |
 | Firebase Authentication | User authentication |
 | Cloud Firestore | Cloud database |
-| Firebase Storage | Evidence image storage |
+| Cloud Firestore | Evidence image storage |
 | image_picker | Upload screenshots |
 | Stateful Widgets | State management |
 | Repository Pattern | Data access layer |
@@ -294,8 +294,9 @@ Fields:
 
 - evidenceId
 - findingId
-- imageUrl
+- imageData
 - note
+- uploadedAt
 
 ---
 
