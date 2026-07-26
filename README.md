@@ -129,10 +129,6 @@ Responsibilities:
 - Edit vulnerability findings
 - Delete vulnerability findings
 - Upload evidence screenshots
-- Search projects
-- Search findings
-- Filter findings
-- Sort findings
 
 ---
 
@@ -203,8 +199,6 @@ Add Finding
 Upload Evidence
     ↓
 Save Finding
-    ↓
-Search / Filter / Sort Findings
 ```
 
 ---
@@ -274,6 +268,8 @@ Fields:
 - target
 - scope
 - createdAt
+- status
+- description
 
 ## FindingModel
 
@@ -288,6 +284,7 @@ Fields:
 - description
 - recommendation
 - createdAt
+- status
 
 ## EvidenceModel
 
