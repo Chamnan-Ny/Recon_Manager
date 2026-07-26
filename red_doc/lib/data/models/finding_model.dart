@@ -1,9 +1,5 @@
 import '../../utils/constants.dart';
 
-
-// Represents one vulnerability finding inside a project.
-// No status field here (like Open/Fixed) - that's a future feature.
-
 class FindingModel {
   String findingId;
   String projectId;
@@ -11,6 +7,7 @@ class FindingModel {
   Severity severity;
   String description;
   String recommendation;
+  String status;
   DateTime createdAt;
 
   FindingModel({
@@ -20,23 +17,41 @@ class FindingModel {
     required this.severity,
     required this.description,
     required this.recommendation,
+    required this.status,
     required this.createdAt,
   });
 
-  // Turns a Firestore document (Map) into a FindingModel object.
   static FindingModel fromMap(String id, Map<String, dynamic> map) {
+    // Get status with default value if missing
+    String statusValue = 'Open';
+    if (map['status'] != null) {
+      statusValue = map['status'];
+    }
+
+    // Get severity with default if missing
+    Severity severityValue = Severity.medium;
+    if (map['severity'] != null) {
+      severityValue = Severity.values.byName(map['severity']);
+    }
+
+    // Get createdAt with default if missing
+    DateTime createdAtValue = DateTime.now();
+    if (map['createdAt'] != null) {
+      createdAtValue = map['createdAt'].toDate();
+    }
+
     return FindingModel(
       findingId: id,
       projectId: map['projectId'],
       title: map['title'],
-      severity: Severity.values.byName(map['severity']),
+      severity: severityValue,
       description: map['description'],
       recommendation: map['recommendation'],
-      createdAt: map['createdAt'].toDate(), // Firestore Timestamp -> DateTime
+      status: statusValue,
+      createdAt: createdAtValue,
     );
   }
 
-  // Turns this FindingModel back into a Map, to save it in Firestore.
   Map<String, dynamic> toMap() {
     return {
       'projectId': projectId,
@@ -44,6 +59,7 @@ class FindingModel {
       'severity': severity.name,
       'description': description,
       'recommendation': recommendation,
+      'status': status,
       'createdAt': createdAt,
     };
   }

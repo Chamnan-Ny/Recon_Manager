@@ -6,7 +6,7 @@ enum Severity { critical, high, medium, low, informational }
 // The 2 statuses a project can have right now.
 // More statuses (like "approved") will be added later
 // when the Manager feature is built.
-enum ProjectStatus { draft, pendingReview }
+enum ProjectStatus { draft, pendingReview, revisionRequired, approved }
 
 class Constants {
   // Firestore collection names.

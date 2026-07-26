@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1096418365943",
+    "project_id": "reddoc-authentication",
+    "storage_bucket": "reddoc-authentication.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1096418365943:android:80f79adfa2d415a60edef2",
+        "android_client_info": {
+          "package_name": "com.example.red_doc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZ-FzGR0vNr7aL2U1ZqNyP1j_UE_nrUVU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

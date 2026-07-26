@@ -1,5 +1,3 @@
-// Represents one uploaded evidence image attached to a finding.
-
 class EvidenceModel {
   String evidenceId;
   String findingId;
@@ -13,17 +11,33 @@ class EvidenceModel {
     required this.note,
   });
 
-  // Turns a Firestore document (Map) into an EvidenceModel object.
   static EvidenceModel fromMap(String id, Map<String, dynamic> map) {
+    // Get findingId with default if missing
+    String findingId = '';
+    if (map['findingId'] != null) {
+      findingId = map['findingId'];
+    }
+
+    // Get imageUrl with default if missing
+    String imageUrl = '';
+    if (map['imageUrl'] != null) {
+      imageUrl = map['imageUrl'];
+    }
+
+    // Get note with default if missing
+    String note = '';
+    if (map['note'] != null) {
+      note = map['note'];
+    }
+
     return EvidenceModel(
       evidenceId: id,
-      findingId: map['findingId'],
-      imageUrl: map['imageUrl'],
-      note: map['note'],
+      findingId: findingId,
+      imageUrl: imageUrl,
+      note: note,
     );
   }
 
-  // Turns this EvidenceModel back into a Map, to save it in Firestore.
   Map<String, dynamic> toMap() {
     return {'findingId': findingId, 'imageUrl': imageUrl, 'note': note};
   }
